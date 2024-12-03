@@ -194,16 +194,23 @@ fn extract_mul(s: &str) -> Vec<&str> {
     let res = re.find_iter(s);
     for r in res{
         results.push(r.as_str());
-        // let r2: &str = r.as_str();
-        // println!("{:?}", r2);
     };
-    println!("{:?}", results);
+    results
+}
+
+fn extract_mul_do_dont(s: &str) -> Vec<&str> {
+    let mut results = vec![];
+    let s1: Vec<&str> = s.split("do()").collect();
+    for el in s1{
+        let s2: Vec<&str> = el.split("don't()").collect();
+        let mut muls = extract_mul(s2[0]);
+        results.append(&mut muls);
+    };
     results
 }
 
 fn parse_numbers(s: &str) -> (i32, i32){
     let sl: &str = &s[4..s.len()-1];
-    // println!("{:}", sl);
     let numstr = sl.split(",");
     let mut nums: Vec<i32> = vec![];
     for n in numstr {
@@ -215,12 +222,20 @@ fn parse_numbers(s: &str) -> (i32, i32){
 fn day_3() {
     let s = fs::read_to_string("day3.txt").expect("Parsing of file went wrong");
 
+    //Part 1: extract mul naively
     let muls: Vec<&str> = extract_mul(&s);
     let  mut total = 0;
-
     for mul in muls {
         let tup = parse_numbers(mul);
         total += tup.0 * tup.1;
     }
-    println!("{:?}", total)
+    println!("{:?}", total);
+    let mut total = 0;
+    let muls = extract_mul_do_dont(&s);
+    for mul in muls{
+        let tup = parse_numbers(mul);
+        total += tup.0 * tup.1;
+    }
+    println!("{:?}", total);
+
 }
