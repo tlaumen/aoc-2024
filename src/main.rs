@@ -1,4 +1,4 @@
-use std::{array, clone, fs, ops::Index, str::FromStr, vec};
+use std::{array, clone, fs, str::FromStr, vec};
 use regex::Regex;
 
 fn main() {
@@ -567,18 +567,11 @@ impl OrderPair {
         let idx_n2 = order.iter().position(|r| r == &self.n2).unwrap();
         return idx_n1 < idx_n2
     }
-    fn apply(&self, order: &Vec<u8>) -> Vec<u8>{
+    fn apply(&self, order: &mut Vec<u8>) {
         let idx_n1 = order.iter().position(|r| r == &self.n1).unwrap();
         let idx_n2 = order.iter().position(|r| r == &self.n2).unwrap();
         if idx_n1 > idx_n2 {
-            let mut new_order = order.clone();
-            // println!("Order pair: {:?}", self);
-            // println!("Order: {:?}", new_order);
-            new_order.swap(idx_n1, idx_n2);
-            // println!("Swapped order: {:?}", new_order);
-            new_order
-        } else {
-            order.clone()
+            order.swap(idx_n1, idx_n2);
         }
     }
     fn is_relevant(&self, order: &Vec<u8>) -> bool {
@@ -613,7 +606,7 @@ fn parse_rules_and_orders(s: String) -> (Vec<OrderPair>, Vec<Vec<u8>>) {
 }
 
 
-fn order_is_correct(rules: &Vec<OrderPair>, order: &Vec<u8>) -> bool {
+fn order_is_correct(rules: &Vec<OrderPair>, order: &mut Vec<u8>) -> bool {
     for rule in rules.iter() {
         if order.contains(&rule.n1) && order.contains(&rule.n2) {
             let c  = rule.check(&order);
@@ -642,18 +635,16 @@ fn sort_order_list(order: Vec<u8>, rules: &Vec<OrderPair>) -> Vec<u8> {
             relevant_rules.push(rule.clone());
         };
     };
-    let new_order = order.clone();
-    let mut i = 0;
-    while ! order_is_correct(&relevant_rules, &new_order) {
-        for rule in relevant_rules.iter(){
-            for (ii, n1) in new_order.iter().enumerate(){
-                for n2 in new_order[ii..].iter(){
-                    let v: Vec<u8> = [*n1, *n2].to_vec();
-                    if rule.is_relevant(&v) {
-                        let new_order = rule.apply(&new_order);
-                        println!("{:?}", new_order);
-                    }
-                }
+    let mut new_order = order.clone();
+    while ! order_is_correct(&relevant_rules, &mut new_order) {
+        let temp_order = new_order.clone();
+        for (n1, n2) in temp_order[..temp_order.len()-1].iter().zip(temp_order[1..].iter()) {
+            for rule in relevant_rules.iter(){
+                let v: Vec<u8> = [*n1, *n2].to_vec();
+                
+                if rule.is_relevant(&v){
+                    rule.apply(&mut new_order);
+                };
             };
         };
         //Naive method swapping 2 elements, seemed to be stuck!
@@ -661,13 +652,11 @@ fn sort_order_list(order: Vec<u8>, rules: &Vec<OrderPair>) -> Vec<u8> {
         // let new_order: Vec<u8> = rule.apply(&new_order);
         // i += 1;
     };
-    println!("Order is sorted: {:?}", new_order);
     new_order
 }
 
 fn day_5() {
     let s = fs::read_to_string("day5.txt").expect("Parsing of file went wrong");
-    println!("{:}", s);
     let res = parse_rules_and_orders(s);
     let rules = res.0;
     let orders = res.1;
@@ -677,26 +666,23 @@ fn day_5() {
     let mut incorrect_orders: Vec<Vec<u8>> = vec![];
     let mut total: i64 = 0;
     for order in orders.iter() {
-        println!("Order {:?}", order);
-        if order_is_correct(&rules, &order) {
+        let mut order = order.clone();
+        if order_is_correct(&rules, &mut order) {
             correct_orders.push(order.clone());
             total += get_middle_page_number(&order) as i64;
         } else {
             incorrect_orders.push(order.clone());
         }
     };
-    println!("{:?}", correct_orders);
     println!("{:?}", total);
 
     // Part 2: set incorrect ordered numbers into correct order and sum middle values
     let mut sorted_orders: Vec<Vec<u8>> = vec![];
-    let mut total = 0;
-    for (i, incorrect_order) in incorrect_orders.iter().enumerate(){
-        println!("index i:{:?} of {:}", i+1, incorrect_order.len());
+    let mut total:i32 = 0;
+    for incorrect_order in incorrect_orders.iter(){
         let sorted = sort_order_list(incorrect_order.clone(), &rules);
-        println!("Order sorted correctly: {:?}", order_is_correct(&rules, &sorted));
         sorted_orders.push(sorted.clone());
-        total += get_middle_page_number(&sorted);
+        total += get_middle_page_number(&sorted) as i32;
     };
     println!("{:?}", total);
 
