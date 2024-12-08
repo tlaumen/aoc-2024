@@ -1,8 +1,8 @@
-use std::{fs, str::FromStr, vec};
+use std::{array, fs, str::FromStr, vec};
 use regex::Regex;
 
 fn main() {
-    day_3();
+    day_4();
 }
 
 fn day_1() {
@@ -194,6 +194,7 @@ fn extract_mul(s: &str) -> Vec<&str> {
     let res = re.find_iter(s);
     for r in res{
         results.push(r.as_str());
+        // println!("{:?}", r2);
     };
     results
 }
@@ -237,5 +238,318 @@ fn day_3() {
         total += tup.0 * tup.1;
     }
     println!("{:?}", total);
+
+}
+
+fn from_str_to_matrix(s: &str)  -> Vec<Vec<char>> {
+    let lines: Vec<&str> = s.split("\n").collect();
+    let mut m: Vec<Vec<char>> = vec![];
+    for line in lines {
+        let mut row: Vec<char> = vec![];
+        for c in line.chars() {
+            row.push(c);
+        };
+        m.push(row);
+    };
+    println!("{:?}", m);
+    m
+}
+
+fn dims_matrix(m: Vec<Vec<char>>) -> (usize, usize) {
+    (m.len(), m[0].len())
+
+}
+
+fn display_xmas_matrix(m: Vec<Vec<char>>, indices: Vec<(usize, usize)>) {
+    for (i, line) in m.iter().enumerate(){
+        for (j, c) in line.into_iter().enumerate(){
+            if indices.contains(&(i, j)) {
+                print!("{:}", c);
+            } else {
+                print!(".");
+            }
+        };
+        print!("\n")
+    }; 
+}
+
+fn search_horizontal(m: Vec<Vec<char>>, i: usize, j: usize) -> (bool, Vec<(usize, usize)>) {
+    let s_target = String::from_str("XMAS").expect("XMAS string cannot be created");
+    let mut s = String::new();
+    let dims= dims_matrix(m.clone());
+    let j_max = dims.1;
+    if j + s_target.len() > j_max {
+        return (false, vec![(0, 0)]);
+    };
+    let mut indices: Vec<(usize, usize)> = vec![];
+    for jj in j .. j+s_target.len() {
+        s.push(m.clone()[i][jj]);
+        indices.push((i, jj))
+    };
+    if s.eq(&s_target) {
+        return (true, indices);
+    } else {
+        return (false, indices);
+    };
+}
+fn search_horizontal_back(m: Vec<Vec<char>>, i: usize, j: usize) -> (bool, Vec<(usize, usize)>) {
+    let s_target = String::from_str("XMAS").expect("XMAS string cannot be created");
+    let mut s = String::new();
+    if j < s_target.len() -1 {
+        return (false, vec![(0, 0)]);
+    };
+    let mut indices: Vec<(usize, usize)> = vec![];
+    for jj in (j+1-s_target.len().. j+1).rev() {
+        s.push(m.clone()[i][jj]);
+        indices.push((i, jj))
+    };
+    if s.eq(&s_target) {
+        return (true, indices);
+    } else {
+        return (false, indices);
+    };
+}
+fn search_vertical(m: Vec<Vec<char>>, i: usize, j: usize) -> (bool, Vec<(usize, usize)>) {
+    let s_target = String::from_str("XMAS").expect("XMAS string cannot be created");
+    let mut s = String::new();
+    let dims= dims_matrix(m.clone());
+    let i_max = dims.0;
+    if i + s_target.len() > i_max {
+        return (false, vec![(0, 0)]);
+    };
+    let mut indices: Vec<(usize, usize)> = vec![];
+    for ii in i .. i+s_target.len() {
+        s.push(m.clone()[ii][j]);
+        indices.push((ii, j))
+    };
+    if s.eq(&s_target) {
+        return (true, indices);
+    } else {
+        return (false, indices);
+    };
+}
+fn search_vertical_back(m: Vec<Vec<char>>, i: usize, j: usize) -> (bool, Vec<(usize, usize)>) {
+    let s_target = String::from_str("XMAS").expect("XMAS string cannot be created");
+    let mut s = String::new();
+    if i < s_target.len() -1 {
+        return (false, vec![(0, 0)]);
+    };
+    let mut indices: Vec<(usize, usize)> = vec![];
+    for ii in (i+1-s_target.len() .. i+1).rev() {
+        s.push(m.clone()[ii][j]);
+        indices.push((ii, j))
+    };
+    if s.eq(&s_target) {
+        return (true, indices);
+    } else {
+        return (false, indices);
+    };
+}
+fn search_diagonal_down_right(m: Vec<Vec<char>>, i: usize, j: usize) -> (bool, Vec<(usize, usize)>) {
+    let s_target = String::from_str("XMAS").expect("XMAS string cannot be created");
+    let mut s = String::new();
+    let dims= dims_matrix(m.clone());
+    let i_max = dims.0;
+    let j_max = dims.1;
+    if j + s_target.len() > j_max {
+        return (false, vec![(0, 0)]);
+    };
+    if i + s_target.len() > i_max {
+        return (false, vec![(0, 0)]);
+    };
+    let mut indices: Vec<(usize, usize)> = vec![];
+    let i_arr: Vec<usize> = (i..i+s_target.len()).collect();
+    let j_arr: Vec<usize> = (j..j+s_target.len()).collect();
+    for (ii, jj) in i_arr.iter().zip(j_arr.iter()){
+            s.push(m.clone()[*ii][*jj]);
+            indices.push((*ii, *jj));
+    };
+    if s.eq(&s_target) {
+        return (true, indices);
+    } else {
+        return (false, indices);
+    };
+}
+
+fn search_diagonal_up_right(m: Vec<Vec<char>>, i: usize, j: usize) -> (bool, Vec<(usize, usize)>) {
+    let s_target = String::from_str("XMAS").expect("XMAS string cannot be created");
+    let mut s = String::new();
+    let dims= dims_matrix(m.clone());
+    let j_max = dims.1;
+    if j + s_target.len() > j_max {
+        return (false, vec![(0, 0)]);
+    };
+    if i < s_target.len() -1 {
+        return (false, vec![(0, 0)]);
+    };
+    let mut indices: Vec<(usize, usize)> = vec![];
+    let i_arr: Vec<usize> = (i+1-s_target.len()..i+1).rev().collect();
+    let j_arr: Vec<usize> = (j..j+s_target.len()).collect();
+    for (ii, jj) in i_arr.iter().zip(j_arr.iter()){
+            s.push(m.clone()[*ii][*jj]);
+            indices.push((*ii, *jj));
+    };
+    if s.eq(&s_target) {
+        return (true, indices);
+    } else {
+        return (false, indices);
+    };
+    
+}
+fn search_diagonal_down_left(m: Vec<Vec<char>>, i: usize, j: usize) -> (bool, Vec<(usize, usize)>) {
+    let s_target = String::from_str("XMAS").expect("XMAS string cannot be created");
+    let mut s = String::new();
+    let dims= dims_matrix(m.clone());
+    let i_max = dims.0;
+    if j < s_target.len() -1 {
+        return (false, vec![(0, 0)]);
+    };
+    if i + s_target.len() > i_max {
+        return (false, vec![(0, 0)]);
+    };
+    let mut indices: Vec<(usize, usize)> = vec![];
+    let i_arr: Vec<usize> = (i..i+s_target.len()).collect();
+    let j_arr: Vec<usize> = (j+1-s_target.len()..j+1).rev().collect();
+    for (ii, jj) in i_arr.iter().zip(j_arr.iter()){
+            s.push(m.clone()[*ii][*jj]);
+            indices.push((*ii, *jj));
+    };
+    if s.eq(&s_target) {
+        return (true, indices);
+    } else {
+        return (false, indices);
+    };
+}
+fn search_diagonal_up_left(m: Vec<Vec<char>>, i: usize, j: usize) -> (bool, Vec<(usize, usize)>) {
+    let s_target = String::from_str("XMAS").expect("XMAS string cannot be created");
+    let mut s = String::new();
+    if j < s_target.len() -1{
+        return (false, vec![(0, 0)]);
+    };
+    if i < s_target.len()-1 {
+        return (false, vec![(0, 0)]);
+    };
+    let mut indices: Vec<(usize, usize)> = vec![];
+    let i_arr: Vec<usize> = (i+1-s_target.len()..i+1).rev().collect();
+    let j_arr: Vec<usize> = (j+1-s_target.len()..j+1).rev().collect();
+    for (ii, jj) in i_arr.iter().zip(j_arr.iter()){
+            s.push(m.clone()[*ii][*jj]);
+            indices.push((*ii, *jj));
+    };
+    if s.eq(&s_target) {
+        return (true, indices);
+    } else {
+        return (false, indices);
+    };
+}
+
+
+fn search_xmas_in_matrix(m: Vec<Vec<char>>) -> Vec<(usize, usize)> {
+    let mut indices: Vec<(usize, usize)> = vec![];
+    for (i, line) in m.clone().into_iter().enumerate(){
+        for (j, _) in line.into_iter().enumerate(){
+            let res = search_horizontal(m.clone(), i, j);
+            if res.0 { //res.0 is true if matched
+                indices.append(&mut res.1.clone());
+            };
+            let res = search_horizontal_back(m.clone(), i, j);
+            if res.0 { //res.0 is true if matched
+                indices.append(&mut res.1.clone());
+            };
+            let res = search_vertical(m.clone(), i, j);
+            if res.0 { //res.0 is true if matched
+                indices.append(&mut res.1.clone());
+            };
+            let res = search_vertical_back(m.clone(), i, j);
+            if res.0 { //res.0 is true if matched
+                indices.append(&mut res.1.clone());
+            };
+            let res = search_diagonal_down_left(m.clone(), i, j);
+            if res.0 { //res.0 is true if matched
+                indices.append(&mut res.1.clone());
+            };
+            let res = search_diagonal_up_left(m.clone(), i, j);
+            if res.0 { //res.0 is true if matched
+                indices.append(&mut res.1.clone());
+            };
+            let res = search_diagonal_down_right(m.clone(), i, j);
+            if res.0 { //res.0 is true if matched
+                indices.append(&mut res.1.clone());
+            };
+            let res = search_diagonal_up_right(m.clone(), i, j);
+            if res.0 { //res.0 is true if matched
+                indices.append(&mut res.1.clone());
+            };
+        };  
+    }
+    indices
+}
+
+fn check_diagonal_up_left_down_right(m: Vec<Vec<char>>, i: usize, j: usize) -> bool {
+    if m[i-1][j-1] == 'S' && m[i+1][j+1] == 'M'{
+        true
+    } else if m[i-1][j-1] == 'M' && m[i+1][j+1] == 'S' {
+        true
+    } else {
+        false
+    }
+}
+
+fn check_diagonal_down_left_up_right(m: Vec<Vec<char>>, i: usize, j: usize) -> bool {
+    if m[i+1][j-1] == 'S' && m[i-1][j+1] == 'M' && m[i][j] == 'A' {
+        true
+    } else if m[i+1][j-1] == 'M' && m[i-1][j+1] == 'S' && m[i][j] == 'A' {
+        true
+    } else {
+        false
+    }
+}
+
+fn is_mas_cross(m: Vec<Vec<char>>, i: usize, j: usize) -> bool {
+    if i < 1 {
+        false
+    } else if i > m.len()-2 {
+        false
+    } else if j < 1 {
+        false
+    } else if j > m[0].len()-2 {
+        false
+    }  else {
+        check_diagonal_up_left_down_right(m.clone(), i, j) && check_diagonal_down_left_up_right(m.clone(), i, j)
+    }
+
+}
+
+fn search_mas_cross_in_matrix(m: Vec<Vec<char>>) -> (i32, Vec<(usize, usize)>) {
+    let mut n = 0;
+    let mut indices: Vec<(usize, usize)> = vec![];
+    for (i, line) in m.clone().into_iter().enumerate(){
+        for (j, _) in line.into_iter().enumerate(){
+                if is_mas_cross(m.clone(), i, j) {
+                    indices.push((i-1, j-1));
+                    indices.push((i-1, j+1));
+                    indices.push((i, j));
+                    indices.push((i+1, j-1));
+                    indices.push((i+1, j+1));
+                    n += 1;
+                }
+            };
+        };
+    (n, indices)
+} 
+            
+fn day_4() {
+    let s = fs::read_to_string("day4.txt").expect("Parsing of file went wrong");
+    let m  = from_str_to_matrix(&s);
+
+    // Part 1: find all instances of xmax
+    let indices = search_xmas_in_matrix(m.clone());
+    // display_xmas_matrix(m.clone(), indices.clone());
+    println!("{:}", indices.len() / 4);
+
+    // Part 2: find all mas instances in an x shape
+    let res = search_mas_cross_in_matrix(m.clone());
+    // display_xmas_matrix(m.clone(), res.1.clone());
+    println!("n indices: {:}", res.0);
 
 }
