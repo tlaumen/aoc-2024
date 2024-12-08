@@ -1,8 +1,8 @@
-use std::{array, fs, str::FromStr, vec};
+use std::{array, clone, fs, ops::Index, str::FromStr, vec};
 use regex::Regex;
 
 fn main() {
-    day_4();
+    day_5();
 }
 
 fn day_1() {
@@ -551,5 +551,154 @@ fn day_4() {
     let res = search_mas_cross_in_matrix(m.clone());
     // display_xmas_matrix(m.clone(), res.1.clone());
     println!("n indices: {:}", res.0);
+
+}
+
+#[derive(Debug)]
+#[derive(Clone)]
+struct OrderPair {
+    n1: u8,
+    n2: u8
+}
+
+impl OrderPair {
+    fn check(&self, order: &Vec<u8>) -> bool {
+        let idx_n1 = order.iter().position(|r| r == &self.n1).unwrap();
+        let idx_n2 = order.iter().position(|r| r == &self.n2).unwrap();
+        return idx_n1 < idx_n2
+    }
+    fn apply(&self, order: &Vec<u8>) -> Vec<u8>{
+        let idx_n1 = order.iter().position(|r| r == &self.n1).unwrap();
+        let idx_n2 = order.iter().position(|r| r == &self.n2).unwrap();
+        if idx_n1 > idx_n2 {
+            let mut new_order = order.clone();
+            // println!("Order pair: {:?}", self);
+            // println!("Order: {:?}", new_order);
+            new_order.swap(idx_n1, idx_n2);
+            // println!("Swapped order: {:?}", new_order);
+            new_order
+        } else {
+            order.clone()
+        }
+    }
+    fn is_relevant(&self, order: &Vec<u8>) -> bool {
+        order.contains(&self.n1) && order.contains(&self.n2)
+    }
+}
+
+
+fn parse_rules_and_orders(s: String) -> (Vec<OrderPair>, Vec<Vec<u8>>) {
+    let mut pairs: Vec<OrderPair> = vec![];
+    let mut orders: Vec<Vec<u8>> = vec![];
+    let mut parse_pairs: bool = true;
+    for l in s.split("\n"){
+        if l == "" {
+            parse_pairs = false;
+            continue;
+        }
+        if parse_pairs {
+            let numbers: Vec<&str> = l.split("|").collect();
+            let q = OrderPair{n1: numbers[0].parse().unwrap(), n2: numbers[1].parse().unwrap()};
+            pairs.push(q);
+        } else {
+            let order_str: Vec<&str> = l.split(",").collect();
+            let mut order: Vec<u8> = vec![];
+            for n in order_str {
+                order.push(n.parse().unwrap());
+            };
+            orders.push(order);
+        };
+    };
+    (pairs, orders)
+}
+
+
+fn order_is_correct(rules: &Vec<OrderPair>, order: &Vec<u8>) -> bool {
+    for rule in rules.iter() {
+        if order.contains(&rule.n1) && order.contains(&rule.n2) {
+            let c  = rule.check(&order);
+            if !c {
+                return false
+            };
+        };
+    };
+    true
+}
+
+fn get_middle_page_number(v: &Vec<u8>) -> u8 {
+    if v.len() % 2 == 0 { // number of values is even, middle page number cannot be determined. Zero is used to disregard value
+        return 0
+    } else {
+        let idx: f64 = v.len() as f64 / 2.0;
+        let idx: usize = idx.floor() as usize;
+        return v[idx]
+    }
+}
+
+fn sort_order_list(order: Vec<u8>, rules: &Vec<OrderPair>) -> Vec<u8> {
+    let mut relevant_rules: Vec<OrderPair> = vec![];
+    for rule in rules{
+        if rule.is_relevant(&order) {
+            relevant_rules.push(rule.clone());
+        };
+    };
+    let new_order = order.clone();
+    let mut i = 0;
+    while ! order_is_correct(&relevant_rules, &new_order) {
+        for rule in relevant_rules.iter(){
+            for (ii, n1) in new_order.iter().enumerate(){
+                for n2 in new_order[ii..].iter(){
+                    let v: Vec<u8> = [*n1, *n2].to_vec();
+                    if rule.is_relevant(&v) {
+                        let new_order = rule.apply(&new_order);
+                        println!("{:?}", new_order);
+                    }
+                }
+            };
+        };
+        //Naive method swapping 2 elements, seemed to be stuck!
+        // let rule = relevant_rules[i%relevant_rules.len()].clone();
+        // let new_order: Vec<u8> = rule.apply(&new_order);
+        // i += 1;
+    };
+    println!("Order is sorted: {:?}", new_order);
+    new_order
+}
+
+fn day_5() {
+    let s = fs::read_to_string("day5.txt").expect("Parsing of file went wrong");
+    println!("{:}", s);
+    let res = parse_rules_and_orders(s);
+    let rules = res.0;
+    let orders = res.1;
+
+    //Part 1: get all correct orders and sum middle values
+    let mut correct_orders: Vec<Vec<u8>> = vec![];
+    let mut incorrect_orders: Vec<Vec<u8>> = vec![];
+    let mut total: i64 = 0;
+    for order in orders.iter() {
+        println!("Order {:?}", order);
+        if order_is_correct(&rules, &order) {
+            correct_orders.push(order.clone());
+            total += get_middle_page_number(&order) as i64;
+        } else {
+            incorrect_orders.push(order.clone());
+        }
+    };
+    println!("{:?}", correct_orders);
+    println!("{:?}", total);
+
+    // Part 2: set incorrect ordered numbers into correct order and sum middle values
+    let mut sorted_orders: Vec<Vec<u8>> = vec![];
+    let mut total = 0;
+    for (i, incorrect_order) in incorrect_orders.iter().enumerate(){
+        println!("index i:{:?} of {:}", i+1, incorrect_order.len());
+        let sorted = sort_order_list(incorrect_order.clone(), &rules);
+        println!("Order sorted correctly: {:?}", order_is_correct(&rules, &sorted));
+        sorted_orders.push(sorted.clone());
+        total += get_middle_page_number(&sorted);
+    };
+    println!("{:?}", total);
+
 
 }
